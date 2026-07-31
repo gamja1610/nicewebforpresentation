@@ -1,5 +1,5 @@
 # 로컬 전용 — 유튜브 원본 영상/캡처 프레임 (저작권, 용량 문제로 git에 올리지 않음)
-.claude/skills/skillweb/references/visual-ref/
+.agent/skills/skillweb/references/visual-ref/
 
 # 절대 외부 유출 금지 — 개인정보 수준 보안 (.env와 동급)
 # examples/의 팀 프로젝트 md와 output/의 생성 결과물(md 내용이 그대로 반영됨) 모두 제외

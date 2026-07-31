@@ -13,7 +13,8 @@ ZIP_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/skillweb-skill.zip"
 AGENTS_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/AGENTS.md"
 
 DEST_ROOT="${1:-.}"
-SKILLS_DIR="${DEST_ROOT}/.claude/skills"
+CLAUDE_SKILLS_DIR="${DEST_ROOT}/.claude/skills"
+AGENT_SKILLS_DIR="${DEST_ROOT}/.agent/skills"
 
 need() { command -v "$1" >/dev/null 2>&1; }
 
@@ -27,9 +28,9 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 curl -fsSL "$ZIP_URL" -o "$TMP_DIR/skillweb-skill.zip"
 
-mkdir -p "$SKILLS_DIR"
+mkdir -p "$CLAUDE_SKILLS_DIR"
 
-echo "→ Extracting into ${SKILLS_DIR}/skillweb ..."
+echo "→ Extracting into ${CLAUDE_SKILLS_DIR}/skillweb ..."
 # Note: the archive is built on Windows (PowerShell Compress-Archive), whose
 # zip metadata makes Info-ZIP's unzip print a harmless "backslashes as path
 # separators" warning and exit 1 even though extraction succeeds (entry names
@@ -37,21 +38,28 @@ echo "→ Extracting into ${SKILLS_DIR}/skillweb ..."
 # turn off -e around it and verify the real result (SKILL.md landed) instead.
 set +e
 if need unzip; then
-  unzip -oq "$TMP_DIR/skillweb-skill.zip" -d "$SKILLS_DIR"
+  unzip -oq "$TMP_DIR/skillweb-skill.zip" -d "$CLAUDE_SKILLS_DIR"
 elif need python3; then
-  python3 -m zipfile -e "$TMP_DIR/skillweb-skill.zip" "$SKILLS_DIR"
+  python3 -m zipfile -e "$TMP_DIR/skillweb-skill.zip" "$CLAUDE_SKILLS_DIR"
 elif need python; then
-  python -m zipfile -e "$TMP_DIR/skillweb-skill.zip" "$SKILLS_DIR"
+  python -m zipfile -e "$TMP_DIR/skillweb-skill.zip" "$CLAUDE_SKILLS_DIR"
 else
   echo "error: need 'unzip' or 'python' to extract the skill archive." >&2
   exit 1
 fi
 set -e
 
-if [ ! -f "$SKILLS_DIR/skillweb/SKILL.md" ]; then
-  echo "error: extraction did not produce ${SKILLS_DIR}/skillweb/SKILL.md" >&2
+if [ ! -f "$CLAUDE_SKILLS_DIR/skillweb/SKILL.md" ]; then
+  echo "error: extraction did not produce ${CLAUDE_SKILLS_DIR}/skillweb/SKILL.md" >&2
   exit 1
 fi
+
+# Claude Code only auto-discovers .claude/skills/, but AGENTS.md (below) points
+# non-Claude-Code agents at .agent/skills/skillweb — mirror the same content
+# there too so that path is never a lie on the machine we just installed on.
+mkdir -p "$AGENT_SKILLS_DIR"
+rm -rf "$AGENT_SKILLS_DIR/skillweb"
+cp -r "$CLAUDE_SKILLS_DIR/skillweb" "$AGENT_SKILLS_DIR/skillweb"
 
 # Also drop AGENTS.md at the project root for non-Claude-Code agents (Codex CLI,
 # opencode, Cursor, Aider, ...), without clobbering one the user already has.
@@ -64,10 +72,10 @@ else
 fi
 
 echo ""
-echo "✅ skillweb installed at ${SKILLS_DIR}/skillweb"
+echo "✅ skillweb installed at ${CLAUDE_SKILLS_DIR}/skillweb (and mirrored at ${AGENT_SKILLS_DIR}/skillweb)"
 echo ""
 echo "Claude Code: restart your session (skills are scanned once at session start),"
 echo "  then hand it a project .md and ask for a '발표자료'/web deck, or run /skillweb."
 echo ""
 echo "Other agents (Codex CLI, opencode, Cursor, Aider, ...): tell it to follow"
-echo "  AGENTS.md at the project root, which points at .claude/skills/skillweb/SKILL.md."
+echo "  AGENTS.md at the project root, which points at .agent/skills/skillweb/SKILL.md."
